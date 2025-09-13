@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PetTaxi</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:0;display:flex;gap:1rem;height:100vh}
+    #sidebar{width:380px;padding:1rem;box-shadow:0 0 10px rgba(0,0,0,.08);overflow:auto}
+    #map{flex:1; min-height:600px; border-radius:10px;}
+    label{display:block;margin-top:.6rem;font-weight:600}
+    input,select,button,textarea{width:100%;padding:.5rem;margin-top:.25rem;border:1px solid #fecb89;border-radius:6px}
+    .row{display:flex;gap:.5rem}
+    .row > *{flex:1}
+    .result{background:#fecb89;padding:.6rem;border-radius:8px;margin-top:.6rem}
+    .btn-primary{background:#2563eb;color:#ffffff;border:none;padding:.6rem;border-radius:8px;cursor:pointer}
+    .muted{color:#666;font-size:.9rem}
+
+    /* Estilos para imprimir */
+    #printArea{display:none;}
+    .ticket { font-family: monospace; border:2px dashed #000; padding:1rem; width:320px; margin:auto; background:#ff9100; }
+    .ticket h2{text-align:center; margin-bottom:0.5rem;}
+    .ticket hr{border:none;border-top:1px dashed #000;margin:0.5rem 0;}
+    .ticket p{margin:0.3rem 0;}
+
+    @media print {
+      body * {visibility:hidden;}
+      #printArea, #printArea * {visibility:visible;}
+      #printArea {position:absolute;left:0;top:0;width:100%;}
+    }
+    #banner {
+  background-color: #ff9100; /* naranja claro */
+  padding: 1rem;
+  text-align: center;
+  border-bottom: 2px solid #f97316;
+}
+
+#banner h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #f97316; /* naranja fuerte */
+  font-weight: 700;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+  </style>
+</head>
+<body>
+<style>
+  body {
+    background-color: #fff4e6;
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+
+  #sidebar {
+    background-color: #ffe0b2;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    width: 320px;
+    margin: 40px auto;
+    text-align: center;
+  }
+
+  #sidebar h2.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: #d35400;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  #sidebar h2.logo img {
+    height: 48px;
+    margin-right: 10px;
+    border-radius: 10px;
+  }
+
+  .muted {
+    color: #e67e22;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin-top: 10px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .muted::before {
+    content: "🐾 ";
+    font-size: 18px;
+    margin-right: 6px;
+  }
+</style>
+
+</head>
+</head>
+<body>
+  <aside id="sidebar">
+    <h2 class="logo">
+      <img src="Logo.png" alt="PetTaxi Logo">
+      Pet Taxi 🐶🚕
+    </h2>
+    <p class="muted">Rellena los datos del cliente y la mascota.</p>
+
+    <label>Nombre del cliente</label>
+    <input id="clientName" placeholder="Ej. Ana Pérez" />
+
+    <label>Teléfono</label>
+    <input id="phone" placeholder="5512345678" />
+
+    <label>Correo</label>
+    <input id="email" placeholder="ana@mail.com" />
+
+    <label>Nombre del perro</label>
+    <input id="petName" placeholder="Firulais" />
+
+    <div class="row">
+      <div>
+        <label>Tamaño</label>
+        <select id="size">
+          <option value="chico">Chico (50 MXN)</option>
+          <option value="mediano">Mediano (100 MXN)</option>
+          <option value="grande">Grande (150 MXN)</option>
+        </select>
+      </div>
+      <div>
+        <label>Temperamento</label>
+        <select id="temperament">
+          <option value="tranquilo">Tranquilo</option>
+          <option value="agresivo">Agresivo</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Dirección de origen</label>
+    <input id="origin" placeholder="Calle, Colonia sin CP" />
+
+    <label>Dirección de destino</label>
+    <input id="destination" placeholder="Calle, Colonia sin CP" />
+
+
+
+    <div style="margin-top:.6rem" class="row">
+      <button id="routeBtn" class="btn-primary">Calcular ruta y precio</button>
+      <button id="resetBtn" style="background:#ef4444;color:white;border:none;padding:.6rem;border-radius:8px;cursor:pointer">Limpiar</button>
+    </div>
+
+    <div id="output" class="result" style="display:none">
+      <strong>Resumen del viaje</strong>
+      <div id="summary" style="margin-top:.5rem"></div>
+      <div id="priceBox" style="margin-top:.5rem;font-size:1.2rem;font-weight:700"></div>
+      <div style="margin-top:.5rem" class="row">
+        <button id="printBtn" class="btn-primary">Imprimir recibo</button>
+      </div>
+    </div>
+  </aside>
+
+  <div id="map"></div>
+  <div id="printArea" style="display:none;"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    const basePrices = { chico: 50, mediano: 100, grande: 150 };
+    const perKm = 10;
+
+    const map = L.map('map').setView([19.4326, -99.1332], 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
+
+    let routeLayer = null, originMarker = null, destMarker = null;
+
+    const originIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/616/616408.png', iconSize: [30, 30] });
+    const destIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png', iconSize: [30, 30] });
+
+    async function geocode(q) {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&addressdetails=1`);
+      const data = await res.json();
+      return data.length > 0 ? data[0] : null;
+    }
+
+    function showMessage(msg) { alert(msg); }
+    function formatCurrency(n) { return n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }); }
+
+    async function calcularRuta() {
+      const oInput = document.getElementById('origin').value.trim();
+      const dInput = document.getElementById('destination').value.trim();
+      if (!oInput || !dInput) { showMessage('Por favor ingresa origen y destino.'); return; }
+
+      const o = await geocode(oInput), d = await geocode(dInput);
+      if (!o || !d) { showMessage('No se pudo geocodificar alguna de las direcciones.'); return; }
+
+      const fromLat = parseFloat(o.lat), fromLon = parseFloat(o.lon);
+      const toLat = parseFloat(d.lat), toLon = parseFloat(d.lon);
+
+      if (originMarker) map.removeLayer(originMarker);
+      if (destMarker) map.removeLayer(destMarker);
+
+      originMarker = L.marker([fromLat, fromLon], { icon: originIcon }).addTo(map).bindPopup('Origen').openPopup();
+      destMarker = L.marker([toLat, toLon], { icon: destIcon }).addTo(map).bindPopup('Destino');
+
+      if (routeLayer) map.removeLayer(routeLayer);
+
+      const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${fromLon},${fromLat};${toLon},${toLat}?overview=full&geometries=geojson`);
+      const jr = await r.json();
+      if (!jr.routes || jr.routes.length === 0) { showMessage('No se pudo obtener la ruta.'); return; }
+
+      const route = jr.routes[0];
+      const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+      routeLayer = L.polyline(coords, { color: '#ff6b6b', weight: 6 }).addTo(map);
+      map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+
+      const km = route.distance / 1000;
+      const durationMin = Math.round(route.duration / 60);
+      const size = document.getElementById('size').value;
+      const base = basePrices[size];
+      const distancePrice = km * perKm;
+      const total = Math.round((base + distancePrice) * 100) / 100;
+
+      document.getElementById('summary').innerHTML = `Origen: <strong>${o.display_name}</strong><br>Destino: <strong>${d.display_name}</strong><br>Distancia: <strong>${km.toFixed(2)} km</strong><br>Tiempo estimado: <strong>${durationMin} min</strong>`;
+      document.getElementById('priceBox').innerText = `Precio total: ${formatCurrency(total)} (Base ${formatCurrency(base)} + ${formatCurrency(distancePrice)} por ${km.toFixed(2)} km)`;
+      document.getElementById('output').style.display = 'block';
+
+      window.lastBooking = {
+        clientName: document.getElementById('clientName').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value,
+        petName: document.getElementById('petName').value,
+        size: size,
+        temperament: document.getElementById('temperament').value,
+        origin: { text: o.display_name, lat: fromLat, lon: fromLon },
+        destination: { text: d.display_name, lat: toLat, lon: toLon },
+        distance_km: Number(km.toFixed(3)),
+        duration_min: durationMin,
+        price_mxn: total,
+        breakdown: { base: base, distance_price: Number(distancePrice.toFixed(2)) }
+      };
+    }
+
+    document.getElementById('printBtn').addEventListener('click', function() {
+      const booking = window.lastBooking;
+      if (!booking) {
+        showMessage('No hay datos para imprimir.');
+        return;
+      }
+
+      const printContent = `
+        <h1>Recibo de Reserva</h1>
+        <p><strong>Nombre del Cliente:</strong> ${booking.clientName}</p>
+        <p><strong>Teléfono:</strong> ${booking.phone}</p>
+        <p><strong>Correo:</strong> ${booking.email}</p>
+        <p><strong>Nombre del Perro:</strong> ${booking.petName}</p>
+        <p><strong>Tamaño:</strong> ${booking.size}</p>
+        <p><strong>Temperamento:</strong> ${booking.temperament}</p>
+        <p><strong>Origen:</strong> ${booking.origin.text}</p>
+        <p><strong>Destino:</strong> ${booking.destination.text}</p>
+        <p><strong>Distancia:</strong> ${booking.distance_km} km</p>
+        <p><strong>Tiempo Estimado:</strong> ${booking.duration_min} min</p>
+        <p><strong>Precio Total:</strong> ${formatCurrency(booking.price_mxn)}</p>
+      `;
+
+      document.getElementById('printArea').innerHTML = printContent;
+      const printWindow = window.open('', '', 'height=600,width=800');
+      printWindow.document.write('<html><head><title>Imprimir Recibo</title></head><body>');
+      printWindow.document.write(document.getElementById('printArea').innerHTML);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.print();
+    });
+
+    document.getElementById('routeBtn').addEventListener('click', calcularRuta);
+  </script>
+</body>
